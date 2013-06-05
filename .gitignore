@@ -1,0 +1,7 @@
+# Compiled files
+*.py[cod]
+*.a
+*.o
+*.so
+*.pyd
+__pycache__

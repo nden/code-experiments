@@ -1,0 +1,21 @@
+[
+    {
+        "id": 1,
+        coordinate_system":{
+            "name": "Cartesian"},
+        "vertices": [[0, 0],
+                     [100,0],
+                     [100, 200],
+                     [43, 105],
+                     [0,150]]
+    },
+    {
+        "id": 2,
+        "coordinate_system":{
+            "name": "Cartesian"},
+        "vertices": [[110, 0],
+                     [300, 0],
+                     [300, 300],
+                     [110, 300]]
+    }
+]

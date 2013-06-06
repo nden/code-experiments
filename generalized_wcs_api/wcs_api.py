@@ -132,9 +132,19 @@ class FITSWCS(WCS):
     """
     def __init__(self, fits_file, ext=0):
         """
-        Creates an astropy.WCS object and uses its `pix2world`
+        Creates an `~astropy.wcs.WCS` object and uses its `all_pix2world`
         method as a transform.
-        Also constructs a `AstroCoordSystem` object from it.
+        Also constructs a `CoordSystem` object from it.
 
         regions mask is None in this case.
+        """
+
+    def __call__(self, args):
+        """
+        The forward transform uses `all_pix2world` method of the object
+        """
+
+    def __invert(self, args):
+        """
+        Th einverse transform uses the `all_sky2pix` method.
         """

@@ -1,6 +1,9 @@
-from astropy import modeling as mdl
-from astropy import wcs
-from astropy.io import fits
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+from __future__ import division
+#from astropy import wcs
+#from astropy.io import fits
+import pyfits as fits
+from . import transforms
 
 class ModelDimensionalityError(Exception):
     def __init__(self, message):
@@ -21,14 +24,15 @@ class WCS(object):
     output_coordinate_system : astropy.wcs.CoordinateSystem
 
     """
-    def __init__(self, transform, output_coordinate_system):
-        self.transform = transform
-        self.output_coordinate_system = output_coordinate_system
-        self.units = self.output_coordinate_system.units
+    def __init__(self, transform, output_coordinate_system, input_coordinate_system='pixels'):
+        self._transform = transform
+        self._output_coordinate_system = output_coordinate_system
+        self._units = self.output_coordinate_system.units
+        self._input_coordinate_system = PixelCoordinateSystem()
 
     def select(self, label):
-        if isinstance(self.transform, SelectorModel):
-            return self.transform[label]
+        if isinstance(self.transform, transforms.SelectorModel):
+            return self.transform._selector[label]
         else:
             raise ModelDimensionalityError("This WCS has only one transform.")
 
@@ -36,7 +40,8 @@ class WCS(object):
         """
         Performs the forward transformation pix --> world.
         """
-        return self.transform(args)
+        output = self.transform(*args)
+        return output
 
     def invert(self, args):
         try:
@@ -44,7 +49,6 @@ class WCS(object):
             return inverse_transform(*args)
         except NotImplementedError:
             return self.transform.invert(*args)
-
 
 class FITSWCS(WCS):
     """
@@ -108,7 +112,7 @@ class FITSWCS(WCS):
                 header = self._get_header(fobj, ext)
             else:
                 raise ValueError("Expected a FITS file.")
-        elif isinstance(filename, fits.HDUList]):
+        elif isinstance(filename, fits.HDUList):
             fobj = filename
             header = self._get_header(fobj, ext)
         elif isinstance(filename, Header):

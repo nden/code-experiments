@@ -4,9 +4,18 @@ from collections import OrderedDict
 import os
 import numpy as np
 import json
-from .schema import jsonschema
+from jwstlib.models.lib import jsonschema
+#import jsonschema
+from . import schema
 
-def create_regions_mask_from_json(mshape, regionsfile, regschema=None):
+class ValidationError(Exception):
+    def __init__(self, message):
+        self._message = message
+
+    def __str__(self):
+        return self._message
+
+def create_region_mask_from_json(mshape, regions, regschema=None, validate=False):
     """
     Create a regions byte mask from regions defined in a json file
 
@@ -16,10 +25,13 @@ def create_regions_mask_from_json(mshape, regionsfile, regschema=None):
     ----------
     mshape : tuple
         shape of mask array
-    regionsfile : string
+    regions: string or a JSON list of regions
         path to a json file with regions
-    regionsschema : string OR None
+    regschema : string Or None
         path to json file with schema
+        if None, the default schema in gwsc/schema is used
+    validate : boolean
+        if True, validate th eregions file against the schema
 
     Returns
     -------
@@ -32,28 +44,46 @@ def create_regions_mask_from_json(mshape, regionsfile, regschema=None):
     mask = region.create_regions_mask_from_json((300,300), 'regions.json',
                                       'region_schema.json')
     """
-    if regschema is None:
-        from . import schema
-        path = os.path.abspath(schema.__path__[0])
-        regschema = os.path.join(path, 'region_schema.json')
-    mask = np.zeros(mshape, dtype=np.byte)
-    with open(regionsfile) as regf:
-        try:
-            regions = json.load(regf)
-        except:
-            print("Unable to load regions file {0} in json".format(regionsfile))
-            raise
-    with open(regschema) as regschema:
-        try:
-            regschema = json.load(regschema)
-        except:
-            print("Unable to load regions schema file in json")
-            raise
-    jsonschema.validate(regions, regschema)
+    if isinstance(regions[0]['id'], basestring):
+        np_dtype = 'a7'
+    else:
+        np_dtype = np.byte
+    mask = np.zeros(mshape, dtype=np_dtype)
+    if validate:
+        ##TODO: Use validate_reference_file
+        if not validate_json(regions, regschema):
+            message = "Regions file {0} fdid not validate".format(regions)
+            raise ValidationError(message)
     for polygon in regions:
         pol = Polygon(polygon['id'], polygon['vertices'], 'Cartesian')
         mask = pol.scan(mask)
     return mask
+
+def validate_json(json_def, json_schema):
+    if json_schema is None:
+        path = os.path.abspath(schema.__path__[0])
+        json_schema = os.path.join(path, 'region_schema.json')
+
+    with open(json_def) as defs:
+        try:
+            defs = json.load(defs)
+        except:
+            print("Unable to load json file {0} in json".format(json_file))
+            raise
+
+    json_schema = os.path.join(path, json_schema)
+    with open(json_schema) as json_schema:
+        try:
+            json_schema = json.load(json_schema)
+        except:
+            print("Unable to load schema file in json").format(json_schema)
+            raise
+    result = jsonschema.validate(defs, json_schema)
+
+    if result is None:
+        return True
+    else:
+        return False
 
 class Region(object):
     """
@@ -129,15 +159,15 @@ class Polygon(Region):
 
         self._vertices = np.asarray(vertices)
         self._bbox = self._get_bounding_box()
-        self._scan_line_range=range(self.bbox[1], self.bbox[3]+self.bbox[1]+1)
+        self._scan_line_range=range(self._bbox[1], self._bbox[3]+self._bbox[1]+1)
         #constructs a Global Edge Table (GET) in bbox coordinates
         self._GET = self._construct_ordered_GET()
 
     def _get_bounding_box(self):
-        x = self.vertices[:,0].min()
-        y = self.vertices[:,1].min()
-        w = self.vertices[:,0].max() - x
-        h = self.vertices[:,1].max() - y
+        x = self._vertices[:,0].min()
+        y = self._vertices[:,1].min()
+        w = self._vertices[:,0].max() - x
+        h = self._vertices[:,1].max() - y
         return (x, y, w, h)
 
     def  _construct_ordered_GET(self):
@@ -157,9 +187,9 @@ class Polygon(Region):
         # edges is a list of Edge objects which define a polygon
         # with these vertices
         edges = self.get_edges()
-        GET = OrderedDict.fromkeys(self.scan_line_range)
+        GET = OrderedDict.fromkeys(self._scan_line_range)
         ymin=np.asarray([e._ymin for e in edges])
-        for i in self.scan_line_range:
+        for i in self._scan_line_range:
             ymin_ind = (ymin == i).nonzero()[0]
             if ymin_ind.any():
                 GET[i] = [edges[ymin_ind[0]]]
@@ -172,9 +202,9 @@ class Polygon(Region):
         Create a list of Edge objects from vertices
         """
         edges = []
-        for i in range(1, len(self.vertices)):
+        for i in range(1, len(self._vertices)):
             name = 'E'+str(i-1)
-            edges.append(Edge(name=name, start=self.vertices[i-1], stop=self.vertices[i]))
+            edges.append(Edge(name=name, start=self._vertices[i-1], stop=self._vertices[i]))
         return edges
 
     def scan(self, data):
@@ -205,17 +235,17 @@ class Polygon(Region):
         ## 2. Currently it uses intersection of the scan line with edges. If this is
         ## too slow it should use the 1/m increment (replace 3 above) (or the increment
         ## should be removed from the GET entry).
-        y = np.min(self.GET.keys())
+        y = np.min(self._GET.keys())
         AET = []
-        scline = self.scan_line_range[-1]
+        scline = self._scan_line_range[-1]
         while y <=scline:
             AET = self.update_AET(y, AET)
-            scan_line = Edge('scan_line', start=[self.bbox[0], y],
-                                            stop=[self.bbox[0]+self.bbox[2], y])
+            scan_line = Edge('scan_line', start=[self._bbox[0], y],
+                                            stop=[self._bbox[0]+self._bbox[2], y])
             x = [np.ceil(e.compute_AET_entry(scan_line)[1]) for e in AET if e is not None]
             xnew=np.sort(x)
             for i,j in zip(xnew[::2], xnew[1::2]):
-                data[y][i:j+1] = self.rid
+                data[y][i:j+1] = self._rid
             y = y+1
         return data
 
@@ -229,7 +259,7 @@ class Polygon(Region):
         equal to y of the scan line.
 
         """
-        edge_cont = self.GET[y]
+        edge_cont = self._GET[y]
         if edge_cont is not None:
             for edge in edge_cont:
                 if edge._start[1] != edge._stop[1] and edge._ymin == y:
@@ -242,12 +272,12 @@ class Polygon(Region):
 
     def __contains__(self, px):
         """even-odd algorithm or smth else better sould be used"""
-        minx = self.vertices[:,0].min()
-        maxx = self.vertices[:,0].max()
-        miny = self.vertices[:,1].min()
-        maxy = self.vertices[:,1].max()
-        return px[0] >= self.bbox[0] and px[0] <= self.bbox[0]+self.bbox[2] and \
-               px[1] >=self.bbox[1] and px[1] <=self.bbox[1]+self.bbox[3]
+        minx = self._vertices[:,0].min()
+        maxx = self._vertices[:,0].max()
+        miny = self._vertices[:,1].min()
+        maxy = self._vertices[:,1].max()
+        return px[0] >= self._bbox[0] and px[0] <= self._bbox[0]+self._bbox[2] and \
+               px[1] >=self._bbox[1] and px[1] <=self._bbox[1]+self._bbox[3]
 
 class Edge(object):
     """
@@ -367,10 +397,3 @@ class Edge(object):
         else:
             return True
 
-class NullTransform(object):
-    def __call__(self, x, y):
-        x = np.asarray(x)
-        y = np.asarray(y)
-        result = np.empty(x.shape)
-        result[:] = np.nan
-        return result

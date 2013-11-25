@@ -1,11 +1,12 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
 from __future__ import division
 import abc
-from collections import OrderedDict
+from astropy.utils import OrderedDict
 import os
 import numpy as np
 import json
-from jwstlib.models.lib import jsonschema
-#import jsonschema
+#from jwstlib.models.lib import jsonschema
+import jsonschema
 from . import schema
 
 class ValidationError(Exception):

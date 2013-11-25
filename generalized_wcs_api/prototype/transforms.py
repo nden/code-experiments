@@ -1,9 +1,9 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
 from __future__ import division
 import copy
 import numpy as np
-from modeling import *
-#from astropy.modeling import *
-#from astropy import utils as astu
+from astropy.modeling import *
+from astropy import utils as astu
 from . import region
 import json
 
@@ -50,7 +50,7 @@ class ImagingWCS(object):
             name = m.pop('model_name')
             mclass = getattr(models, name)
             for p in m:
-                if isiterable(m[p]) and 'convert2array' in m[p]:
+                if astu.isiterable(m[p]) and 'convert2array' in m[p]:
                     a = np.array(m[p]['value'])
                     a.shape = m[p]['convert2array']
                     m[p] = a
@@ -213,7 +213,7 @@ class RegionsSelector(SelectorModel):
         output_values = [np.zeros_like(arg) for arg in input_values]
         output_values.append(np.zeros_like(input_values[0]))
         result = self.regions_mask[x, y]
-        if not isiterable(result):
+        if not astu.isiterable(result):
             if result != 0:
                 return self._selector[result[0]](*input_values)
             else:
@@ -236,7 +236,7 @@ class RegionsSelector(SelectorModel):
         output_values = [np.zeros_like(arg) for arg in input_values]
         output_values.append(np.zeros_like(input_values[0]))
         result = self.regions_mask[x, y]
-        if not isiterable(result):
+        if not astu.isiterable(result):
             if result != 0:
                 return self._selector[result[0]](*input_values)
             else:
@@ -267,15 +267,4 @@ class RegionsSelector(SelectorModel):
         """
         Need to invert the regions and construct an InverseSelectorModel
         """
-
-#from astropy
-def isiterable(obj):
-    """Returns `True` if the given object is iterable."""
-
-    try:
-        iter(obj)
-        return True
-    except TypeError:
-        return False
-
 

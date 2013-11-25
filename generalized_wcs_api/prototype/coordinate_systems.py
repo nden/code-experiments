@@ -6,6 +6,11 @@ from astropy import coordinates as coo
 from astropy import units as u
 from astropy import utils as astu
 
+
+__all__ = ['PixelCoordinateSystem', 'SkyFrame', 'SpectralFrame', 'TimeFrame',
+           'CoordinateSystem']
+
+
 class CoordinateFrame(object):
     """
     Base class for CoordinateFrames
@@ -30,7 +35,7 @@ class CoordinateFrame(object):
         self._axes_names = axes_names
         self._reference_system = ref_system
         self._reference_position = ref_pos
-        
+
     @property
     def units(self):
         return self._units
@@ -66,22 +71,35 @@ class TimeFrame(CoordinateFrame):
     ----------
     time_scale : time scale
 
-    reference_position :an instance of ReferencePosition
+    scale : str
+        time scale, one of ``standard_time_scale``
+    format : str
+        time representation
 
     reference_direction : (optional)
     """
 
-    standard_time_scale = ["TT", "TDT", "ET", "TAI", "IAT",
-                           "UTC", "GPS", "TDB", "TEB", "TCG",
-                           "TCB", "LST"]
+    standard_time_scale = time.Time.SCALES
 
-    def __init__(self, time_scale, reference_position, reference_direction=None, units="s", axis_name=None):
-        assert time_scale in standard_time_scale, "Unrecognized time scale"
-        if axis_name is None:
-            axis_name = 'time'
-        super("Time", numaxes=1, ref_pos=reference_position, units=[units], axes_names=axis_name)
-        ##TODO? Is time_scale equivalent to reference_system?
-        self._time_scale = time_scale
+    time_format = time.Time.FORMATS
+
+    def __init__(self, scale, format, obslat=0., obslon=0., units="s", axes_names="Time"):
+        assert scale in self.standard_time_scale, "Unrecognized time scale"
+        assert format in self.time_format, "Unrecognized time representation"
+        super(TimeFrame, self).__init__(1, units=[units], axes_names=[axes_names])
+        self._scale = scale
+        self._format = format
+        self._obslat = obslat
+        self._obslon = obslon
+
+    def transform_to(self, val, tosys, val2=None, precision=None, in_subfmt=None,
+                     out_subfmt=None, copy=False):
+        """Transforms to a different scale/representation"""
+
+        t = time.Time(val, val2, format=self._format, scale=self._scale,
+                      precision=precision, in_subfmt=in_subfmt, out_subfmt=out_subfmt,
+                      lat=self._obslat, lon=self._obslon)
+        return getattr(t, tosys)
 
 
 class SkyFrame(CoordinateFrame):
@@ -102,7 +120,14 @@ class SkyFrame(CoordinateFrame):
         axes labels
     units : str or units.Unit instance or iterable of those
         units on axes
-    offset_center : tuple???
+    distance : Quantity
+        distance from origin
+        see ``~astropy.coordinates.distance`
+    obslat : float or ~astropy.coordinates.Latitute`
+        observer's latitude
+    obslon : float or ~astropy.coordinates.Longitude
+        observer's longitude
+
     """
     standard_ref_frame = ["FK4", "FK5", "ICRS", '...']
 
@@ -111,7 +136,8 @@ class SkyFrame(CoordinateFrame):
                                     "UNKNOWNRefPos"]
 
     def __init__(self, reference_system, reference_position, obstime, equinox=None,
-                 projection="", axes_names=["", ""], units=["",""], offset_center=None):
+                 projection="", axes_names=["", ""], units=["",""], distance=None,
+                 obslat=None, obslon=None):
 
 
         super(SkyFrame, self).__init__(num_axes=2, ref_system=reference_system, ref_pos=reference_position,
@@ -119,8 +145,10 @@ class SkyFrame(CoordinateFrame):
         self._equinox = equinox
         self._projection = projection
         self._obstime = obstime
-        self._offset_center = offset_center
-        
+        self._distance = distance
+        self._oblat = obslat
+        self._obslon = obslon
+
     @property
     def obstime(self):
         return self._obstime
@@ -144,6 +172,7 @@ class SkyFrame(CoordinateFrame):
             return current_coordinates.transform_to(other)
         return create_coordinates
 
+
 class SpectralFrame(CoordinateFrame):
     """
     Represents Spectral Frame
@@ -159,29 +188,32 @@ class SpectralFrame(CoordinateFrame):
     axes_names : str
     rest_freq : float?? or None or Quantity
         rest frequency in units
-    rest_wave : float or None or Quantity
-        rest wavelength in units
-
+    obslat : float or instance of `~astropy.coordinates.Latitude`
+        observer's latitude
+    obslon : float or instanceof `~astropy.coordinates.Longitude`
+        observer's longitude
     """
     spectral_ref_frame = ["WAVE", "FREQ", "ENER", "WAVEN",  "AWAV", "VRAD",
                           "VOPT", "ZOPT", "VELO", "BETA"]
 
     standard_reference_position = ["GEOCENTER", "BARYCENTER", "HELIOCENTER",
-                                    "TOPOCENTER", "LSR", "LSRK", "LSRD",
-                                    "GALACTIC_CENTER", "MOON", "LOCAL_GROUP_CENTER",
-                                    "EMBARYCENTER", "RELOCATABLE", "UNKNOWNRefPos"]
+                                   "TOPOCENTER", "LSR", "LSRK", "LSRD",
+                                   "GALACTIC_CENTER", "MOON", "LOCAL_GROUP_CENTER"]
 
-    def __init__(self, reference_system, reference_position, dateobs, units, axes_names=None,
-                 rest_freq=None, rest_wave=None):
+    ##TODO: observer location for topocentric
+    def __init__(self, reference_system, reference_position, units, axes_names=None,
+                 obstime=None, rest_freq=None, obslat=None, obslon=None):
 
         if axes_names is None:
-            axes_names = reference_system
+            axes_names = [reference_system]
         super(SpectralFrame, self).__init__(num_axes=1, ref_system=reference_system, ref_pos=reference_position,
                                             axes_names=axes_names, units=units)
         self._validate_reference_position()
         self._rest_freq = rest_freq
-        self._rest_wave = rest_wave
-        self._dateobs = dateobs
+        self._obstime = obstime
+
+    def rest_wavelength(self):
+        return self._rest_frequency.to(u.m, equivalencies=u.spectral())
 
     def transfer_to(self, coordinate, other):
         return u.Quantity(coordinate).to(other.units, equivalencies=u.spectral())
@@ -195,13 +227,33 @@ class CoordinateSystem(object):
     name : str
         a user defined name
     frames : list
-        list of frames [Time, Sky, Spectral]
+        list of frames
+        one of TimeFrame, SkyFrame, SpectralFrame, CoordinateFrame, CoordinateSystem
     """
     def __init__(self, frames, name="CompositeSystem"):
         self.frames = frames
 
 class PixelCoordinateSystem(CoordinateSystem):
     def __init__(self, reference_pixel):
-        self._refpix = reference_pixel
+        frame = CoordinateFrame(2, ref_pos=reference_pixel, axes_names=['X', 'Y'])
+        super(PixelCoordinateSystem, self).__init__(frames=frame, name='Pixel')
 
+class ReferencePosition(object):
 
+    standard_reference_position = ["GEOCENTER", "BARYCENTER", "HELIOCENTER",
+                                   "TOPOCENTER", "LSR", "LSRK", "LSRD",
+                                   "GALACTIC_CENTER", "MOON", "EMBARYCENTER",
+                                   "RELOCATABLE", "UNKNOWNRefPos"]
+
+    def __init__(self, ref_pos, lat=None, lon=None, alt=None):
+        if not ref_pos in standard_reference_position:
+            raise ValueError("Unrecognized reference position")
+
+        if ref_pos == 'TOPOCENTRIC' and (lat is None or lon is None or alt is None):
+            raise ValueError("Need lat, lon, alt to define Topocentric reference position")
+
+        self._ref_pos = ref_pos
+
+    @property
+    def ref_pos(self):
+        return self._ref_pos

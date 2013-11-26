@@ -1,4 +1,4 @@
-WCS data model
+WCS data model - (WIP)
 --------------
 
 High level  interface

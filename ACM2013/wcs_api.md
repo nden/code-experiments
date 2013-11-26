@@ -21,7 +21,7 @@ for example regions on detector but not limited to this. In this case:
 
     wcsobj(x,y)
 
-should be able to transform the cordinates using the correct transform.
+should be able to transform the coordinates using the correct transform.
 This is handled by the `SelectorModel` class.
 
     wcs_for_region_3 = wcsobj.select(label=3)
@@ -35,6 +35,14 @@ It is possible to transform the output coordinates to a different coordinate sys
 
     wcsobj.coordinate_system.to(ra, dec, other_system)
 
+One can add additional coordinate systems and transformations between them
+
+    wcsobj.add_transform(fromsys=self.input_coordinate_system, tosys=focal_plane, transform=pix2foc2)
+    
+and later use them like this
+
+    undistorted_coordinates = wcsobj.transform(fromsys=`detector`, tosys='focal_plane', x, y)
+    
 The special case of FITS WCS is handled through the `FITSWCS` class which inherits from `WCS`
 and uses the current `astropy.wcs`  to create the coordinate system object and the transforms.
 

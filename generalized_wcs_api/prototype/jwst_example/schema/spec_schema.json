@@ -1,0 +1,20 @@
+{"$schema": "http://json-schema.org/draft-03/schema#",
+    "title": "Spectral WCS",
+    "type": "object",
+    "description": "Spec Model",
+    "properties": {
+    "models": {
+        "type": "array",
+        "description": "A list of distortion models",
+        "items": {
+    	    "type": "object",
+       	    "model_name": "string",
+            "param_dim": "integer"
+                 }
+              }
+            }
+        }
+
+
+
+

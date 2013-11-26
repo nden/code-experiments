@@ -1,0 +1,118 @@
+{"$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "A set of Regions",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "title": "Polygon Region",
+        "description": "A representation of a rectangular region on a detector",
+        "properties": {
+            "id": {
+                "type": ["integer", "string"]
+            },
+            "wcs_definition": {
+                "type": "object",
+                "oneOf": [
+                    {
+                    "properties":{
+                        "type": {"enum": ["absolute"]},
+                        "WCSAXES": {
+                            "type": "integer",
+                            "description": "Coordinate reference frame for RA and Dec "
+                            },
+                        "CRVAL": {
+                            "type": "array",
+                            "description": "Reference values",
+                            "items": {
+                                "type": "number"
+                            },
+                            "minItems": 1
+                            },
+                        "CRPIX": {
+                            "type": "array",
+                            "description": "Reference pixels",
+                            "items": {
+                                "type": "number"
+                            },
+                            "minItems": 1
+                            },
+                        "PC": {
+                            "type": "array",
+                            "description": "PC matrix as a flattened array",
+                            "items": {
+                                "type": "number"
+                            },
+                            "minItems": 4
+                            },
+                         "CDELT": {
+                            "type": "array",
+                            "description": "Increment per pixel",
+                            "items": {
+                                "type": "number"
+                            },
+                            "minItems": 1
+                            },
+                        "CUNIT": {
+                            "type": "array",
+                            "description": "units in the output coordinate system",
+                            "items": {
+                                "type": "string"
+                            },
+                            "minItems": 1
+                            },
+                        "CTYPE": {
+                            "type": "array",
+                            "description": "Coordinate type",
+                            "items": {
+                                "type": "string"
+                            },
+                            "minItems": 1
+                            },
+                        "RADESYS": {
+                            "type": "string",
+                            "description": "Coordinate reference frame for RA and Dec "
+                            },
+                        "DATEOBS": {
+                            "type": "string"
+                            },
+                        "MJD": {
+                            "type": "string"
+                            },
+                        "EQUINOX": {
+                            "type": "string"
+                            },
+                        "VA_SCALE": {
+                        "type": "number",
+                        "description": "Velocity aberration scale factor"
+                        }
+
+                },
+            "required": ["WCSAXES", "CRVAL", "CRPIX", "PC", "CTYPE", "CDELT",
+                        "RADESYS", "CUNIT"]
+                },
+                {
+                "properties":{
+                "type": {"enum": ["relative"]},
+                    "CRVAL_DELTA": {
+                        "type": "array",
+                        "description": "Deltas for reference values with respect to the absolute",
+                        "items": {
+                            "type": "number"
+                        },
+                        "minItems": 1
+                        },
+                    "CRPIX_DELTA": {
+                        "type": "array",
+                        "description": "Deltas for reference pixels with respect to the absolute",
+                        "items": {
+                            "type": "number"
+                        },
+                        "minItems": 1
+                        }
+                    },
+                "required": ["CRVAL_DELTA", "CRPIX_DELTA"]
+                }
+                        ]
+                }
+        }
+    }
+}

@@ -1,0 +1,14 @@
+{
+"models":
+    [
+        {
+        "model_name": "Chebyshev1DModel",
+        "param_dim": 1,
+        "degree": 3,
+        "c0": 2.234654,
+        "c1": 1.2356,
+        "c2": 4.12156,
+        "c3": 0.135
+        }
+    ]
+}

@@ -1,0 +1,42 @@
+{"$schema": "http://json-schema.org/draft-03/schema#",
+    "title": "A set of Regions",
+    "type": "array",
+    "items":{
+    "type": "object",
+    "title": "Polygon Region",
+    "description": "A representation of a rectangular region on a detector",
+    "properties": {
+        "id": {
+            "type": ["integer", "string"],
+            "required": true,
+            "unique": true
+        },
+        "coordinate_system": {
+            "type": "object",
+            "properties":{
+                "name": {
+                    "type": "string", 
+                    "enum": ["Cartesian", "Sky"]
+                }
+            },
+            "required": true
+        },
+        "vertices": {
+            "type": "array",
+            "description": "Array of vertices describing the Polygon",
+            "items": {
+                "type": "array",
+                "description": "Pairs of (x, y) coordinates, representing a vertex",
+                "items": {
+                    "type": "integer"
+                },
+                "minItems": 2,
+                "maxItems": 2
+            },
+            "minItems": 4,
+            "required": true
+        }
+    }
+    }
+}
+    

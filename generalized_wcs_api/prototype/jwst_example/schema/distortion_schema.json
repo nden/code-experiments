@@ -1,0 +1,38 @@
+{"$schema": "http://json-schema.org/draft-03/schema#",
+    "title": "Image Distortion",
+    "description": "Distortion Model",
+    "type": ["object", "array"],
+    "oneOf": [
+        {
+        "properties":{
+                "type":{"enum": ["object"]},
+            "models": {
+                "type": "array",
+                "description": "A list of distortion models",
+                "items": {
+                    "type": "object",
+                    "model_name": "string",
+                    "param_dim": "integer"
+                        }
+                }
+            }
+        },
+        {
+        "properties":{
+            "type":{"enum": ["array"]},
+            "id": {
+                "type": ["string", "integer"]
+                },
+            "models": {
+                "type": "array",
+                "description": "A list of distortion models",
+                "items": {
+                    "type": "object",
+                    "model_name": "string",
+                    "param_dim": "integer"
+                        }
+                }
+               }
+            }
+        ]
+}

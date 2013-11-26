@@ -1,0 +1,32 @@
+[
+    {
+        "id": "S1600A1",
+        "coordinate_system":{
+            "name": "Cartesian"},
+        "vertices": [[1, 69], [2049 , 69], [2049, 112], [1,112], [1, 69]]
+    },
+    {
+        "id": "S200A1",
+        "coordinate_system":{
+            "name": "Cartesian"},
+        "vertices": [[1, 131], [2049, 131], [2049, 196], [1, 196], [1, 131]]
+    },
+    {
+        "id": "S200A2",
+        "coordinate_system":{
+            "name": "Cartesian"},
+        "vertices": [[1, 167], [2049, 167], [2049, 232], [1, 232 ], [1, 167]]
+    },
+    {
+        "id": "S200B1",
+        "coordinate_system":{
+            "name": "Cartesian"},
+        "vertices": [[1, 33], [2049, 33], [2049, 98],[1,98], [1, 33]]
+    },
+    {
+        "id": "S400A1",
+        "coordinate_system":{
+            "name": "Cartesian"},
+        "vertices": [[1, 91], [2049, 91], [2049, 156], [1, 156], [1, 91]]
+    }
+]

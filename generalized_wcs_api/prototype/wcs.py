@@ -3,7 +3,6 @@ from __future__ import division
 import inspect
 from astropy import wcs
 from astropy.io import fits
-#import pyfits as fits
 from . import transforms
 from . import coordinate_systems
 
@@ -15,16 +14,73 @@ class ModelDimensionalityError(Exception):
         return self._message
 from astropy.coordinates.transformations import TransformGraph
 from .coordinate_systems import *
+import networkx as nx
+
+
+class NXWCS(nx.DiGraph):
+    def __init__(self, transform, output_coordinate_system, input_coordinate_system=None, reference_pixel=None):
+        super(NXWCS, self).__init__()
+        if input_coordinate_system is None:
+            input_coordinate_system = DetectorFrame(reference_pixel, name='Detector')
+        self._input_coordinate_system = input_coordinate_system
+        self._output_coordinate_system = output_coordinate_system
+        self.add_edge(self._input_coordinate_system, self._output_coordinate_system, transform=transform)
+        self._transform = transform
+
+    def __call__(self, *args):
+        transform = self.get_edge_data(self._input_coordinate_system, self._output_coordinate_system)['transform']
+        return transform(*args)
+
+    def select(self, label):
+        if isinstance(self._transform, transforms.SelectorModel):
+            return self._transform._selector[label]
+        else:
+            raise ModelDimensionalityError("This WCS has only one transform.")
+
+    def add_transform(self, fromsys, tosys, transform):
+        ##TODO: check that name is unique
+        self.add_edge(fromsys, tosys, transform=transform)
+
+    def invert(self, args):
+        try:
+            inverse_transform = self._transform.inverse()
+            return inverse_transform(*args)
+        except NotImplementedError:
+            return self._transform.invert(*args)    
+
+    def transform(self, fromsys, tosys, *args):
+        """
+        Parameters
+        ----------
+        fromsys : str
+            name of `fromsys` coordinate system
+        tosys : str
+            name of `tosys` coordinate system
+        """
+        avilable_systems = self.coordinate_systems
+        for c in available_systems:
+            if c.name == fromsys:
+                from_system = c
+            elif c.name == tosys:
+                to_system = c
+            else:
+                continue
+        transform = self.get_edge_data(from_system, to_system)['transform']
+        return transform(*args)
+
+    @property
+    def coordinate_systems(self):
+        return self.nodes()
 
 class GWCS(TransformGraph):
-    def __init__(self, transform, output_coordinate_system, input_coordinate_system=PixelCoordinateSystem):
+    def __init__(self, transform, output_coordinate_system, input_coordinate_system=DetectorFrame):
         super(GWCS, self).__init__()
         self.add_transform(input_coordinate_system, output_coordinate_system, transform)
         self._transform = transform
         self._output_coordinate_system = output_coordinate_system
         self._units = self._output_coordinate_system._units
         if input_coordinate_system is None:
-            self._input_coordinate_system = coordinate_systems.PixelCoordinateSystem(reference_pixel)
+            self._input_coordinate_system = coordinate_systems.DetectorFrame(reference_pixel)
         else:
             self._input_coordinate_system = input_coordinate_system
 
@@ -95,7 +151,7 @@ class WCS(object):
         self._output_coordinate_system = output_coordinate_system
         self._units = self.output_coordinate_system.units
         if input_coordinate_system is None:
-            self._input_coordinate_system = coordinate_systems.PixelCoordinateSystem(reference_pixel)
+            self._input_coordinate_system = coordinate_systems.DetectorFrame(reference_pixel)
 
     def select(self, label):
         if isinstance(self.transform, transforms.SelectorModel):

@@ -23,7 +23,7 @@ class SelectorModel(Model):
 
     @property
     def transforms(self):
-        returnself._selector.values()
+        return self._selector.values()
 
     def __call__(self, label):
         raise NotImplementedError

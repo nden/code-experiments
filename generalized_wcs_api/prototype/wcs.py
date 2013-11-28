@@ -17,7 +17,7 @@ from .coordinate_systems import *
 import networkx as nx
 
 
-class NXWCS(nx.DiGraph):
+class WCS(nx.DiGraph):
     def __init__(self, transform, output_coordinate_system, input_coordinate_system=None, reference_pixel=None):
         super(NXWCS, self).__init__()
         if input_coordinate_system is None:
@@ -72,109 +72,6 @@ class NXWCS(nx.DiGraph):
     def coordinate_systems(self):
         return self.nodes()
 
-class GWCS(TransformGraph):
-    def __init__(self, transform, output_coordinate_system, input_coordinate_system=DetectorFrame):
-        super(GWCS, self).__init__()
-        self.add_transform(input_coordinate_system, output_coordinate_system, transform)
-        self._transform = transform
-        self._output_coordinate_system = output_coordinate_system
-        self._units = self._output_coordinate_system._units
-        if input_coordinate_system is None:
-            self._input_coordinate_system = coordinate_systems.DetectorFrame(reference_pixel)
-        else:
-            self._input_coordinate_system = input_coordinate_system
-
-    @property
-    def units(self):
-        return self._output_coordinate_system._units
-
-    def select(self, label):
-        if isinstance(self.transform, transforms.SelectorModel):
-            return self.transform._selector[label]
-        else:
-            raise ModelDimensionalityError("This WCS has only one transform.")
-
-    def add_transform(self, fromsys, tosys, transform):
-        """
-        Add a new coordinate transformation to the graph.
-
-        Parameters
-        ----------
-        fromsys : class
-            The coordinate system *class* to start from
-        tosys : class
-            The coordinate system *class* to transform to
-        transform : callable
-            The transformation object. Should have call parameters compatible
-            with `CoordinateTransform`.
-
-        Raises
-        ------
-        TypeError
-            If `fromsys` or `tosys` are not classes or `transform` is
-            not callable.
-        """
-        '''
-        if not inspect.isclass(fromsys):
-            raise TypeError('fromsys must be a class')
-        if not inspect.isclass(tosys):
-            raise TypeError('tosys must be a class')
-        '''
-        if not callable(transform):
-            raise TypeError('transform must be callable')
-
-        self._graph[fromsys][tosys] = transform
-        self.invalidate_cache()
-
-    def __call__(self, *args):
-        """
-        Performs the forward transformation pix --> world.
-        """
-        output = self._transform(*args)
-        return output
-
-
-class WCS(object):
-    """
-    Base WCS class
-
-    Parameters
-    ----------
-    transform : astropy.modeling.Model  or a callable
-        a callable which performs the transformation
-
-    output_coordinate_system : astropy.wcs.CoordinateSystem
-
-    """
-    def __init__(self, transform, output_coordinate_system, input_coordinate_system=None, reference_pixel=None):
-        self._transform = transform
-        self._output_coordinate_system = output_coordinate_system
-        self._units = self.output_coordinate_system.units
-        if input_coordinate_system is None:
-            self._input_coordinate_system = coordinate_systems.DetectorFrame(reference_pixel)
-
-    def select(self, label):
-        if isinstance(self.transform, transforms.SelectorModel):
-            return self.transform._selector[label]
-        else:
-            raise ModelDimensionalityError("This WCS has only one transform.")
-
-    def add_transform(self, from_system, to_system, transform):
-        pass
-
-    def __call__(self, *args):
-        """
-        Performs the forward transformation pix --> world.
-        """
-        output = self.transform(*args)
-        return output
-
-    def invert(self, args):
-        try:
-            inverse_transform = self.transform.inverse()
-            return inverse_transform(*args)
-        except NotImplementedError:
-            return self.transform.invert(*args)
 
 class FITSWCS(WCS):
     """
@@ -187,13 +84,12 @@ class FITSWCS(WCS):
     ext : int
         extension number
     """
-    def __init__(self, fits_file, ext=None, ):
+    def __init__(self, fits_file, ext=None, key=""):
         """
         Creates an `~astropy.wcs.WCS` object and uses its `all_pix2world`
         method as a transform.
         Also constructs a `CoordSystem` object from it.
 
-        regions mask is None in this case.
         """
         self._header, self._fobj, self._closeobj = self._get_input(fits_file, ext)
         self.fitswcsobj = wcs.WCS(self._input)
@@ -210,19 +106,17 @@ class FITSWCS(WCS):
 
     def create_coordinate_system(self):
         ref_system = self.fitswcsobj.wcs.radesys
-        unit = self.fitswcsobj.wcs.cunit
+        unit = self.fitswcsobj.wcs.cunit #turn this into unit.Unit()
         ctype = self.fitswcsobj.wcs.ctype
         names = [label.split('-')[0] for label in ctype]
         projcode = self.get_projcode(ctype)[0].upper()
-        flavor=coordinate_systems.CoordinateFlavor(naxes=2, flavor="SPHERICAL", unit=unit,
-                                   axes_names=names)
-        return coordinate_systems.SpaceFrame('Sky', ref_system, coordinate_flavor=flavor,
-                                              projection=projcode)
+        obstime = self.date-obs # turn this into time.Time()
+        return coordinate_systems.SpaceFrame(ref_system, 'BARICENTER', projection=projcode, axes_names=names, units=unit, name="world")
 
     def get_projcode(self, ctype):
         return [ctype[0][5:8], ctype[1][5:8]]
 
-    def __invert(self, args):
+    def invert(self, args):
         """
         The inverse transform uses the `all_sky2pix` method.
         """

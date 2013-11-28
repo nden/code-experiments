@@ -27,6 +27,8 @@ class CoordinateFrame(object):
         unit for each axis
     axes_names : list of str
         names of the axes in this frame
+    name : str
+        name (alias) of this frame
     """
     def __init__(self, num_axes, ref_system=None, ref_pos=None, units=None, axes_names=None, name=None):
         """ Initialize a frame"""
@@ -77,8 +79,7 @@ class CoordinateFrame(object):
 
     def transform_to(self, other):
         """
-        Transform from the current reference system to other if
-        the system attribute of the two matches
+        Transform from the current reference system to other
         """
         raise NotImplementedError("Subclasses should implement this")
 
@@ -133,6 +134,8 @@ class SkyFrame(CoordinateFrame):
     """
     Space Frame Representation
 
+    Parameters
+    ----------
     reference_system : str
         one of standard_ref_frame
     reference_position : str, ReferencePosition instance

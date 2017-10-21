@@ -13,6 +13,12 @@ class FitsWcsPix2World(Model):
     """
     An attempt to integrate fits wcs with gwcs.
 
+    Parameters
+    ----------
+    fitswcs : astropy.wcs.Wcs
+        Fits WCS object
+    origin : int
+        0 or 1, the origin to use when evaluating the FITS WCS object.
     """
     def __init__(self, fitswcs, origin=1, **kwargs):
         self.fitswcs = fitswcs

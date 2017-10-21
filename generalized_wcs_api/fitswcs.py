@@ -10,7 +10,10 @@ from gwcs import coordinate_frames as cf
 
 
 class FitsWcsPix2World(Model):
+    """
+    An attempt to integrate fits wcs with gwcs.
 
+    """
     def __init__(self, fitswcs, origin=1, **kwargs):
         self.fitswcs = fitswcs
         self.origin = origin

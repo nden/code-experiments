@@ -19,7 +19,7 @@ class FitsWcsPix2World(Model):
         Fits WCS object.
     origin : int
         0 or 1, the origin to use when evaluating the FITS WCS object.
-        Default is 1.
+        Default is 1. because of FITS.
     """
     def __init__(self, fitswcs, origin=1, **kwargs):
         self.fitswcs = fitswcs

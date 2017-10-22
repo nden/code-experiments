@@ -16,7 +16,7 @@ class FitsWcsPix2World(Model):
     Parameters
     ----------
     fitswcs : `~astropy.wcs.Wcs`
-        Fits WCS object
+        Fits WCS object.
     origin : int
         0 or 1, the origin to use when evaluating the FITS WCS object.
     """

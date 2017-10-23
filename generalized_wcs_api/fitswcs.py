@@ -8,6 +8,7 @@ from astropy import wcs as astwcs
 from gwcs import wcs
 from gwcs import coordinate_frames as cf
 
+__version__ = "1.0.0"
 
 class FitsWcsPix2World(Model):
     """

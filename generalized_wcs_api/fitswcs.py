@@ -46,3 +46,26 @@ class FitsWcsWorld2Pix(Model):
 
     def evaluate(self, x, y):
         return self.fitswcs.wcs_world2pix(x, y, origin=self.origin)
+
+
+class FITSWCS(Model):
+    """
+
+    Parameters
+    ----------
+    crpix : ndarray-like
+        CRPIX values
+    crval : ndarray-like
+        CRVAL values
+    ctype : ndarray-like
+        CTYPE values
+
+    """
+    crpix = Parameter(default=0.)
+    crval = Parameter(default=0.)
+    pc = Parameter()
+    ctype = Parameter()
+
+
+    def __init__(crpix, crval, pc, cdelt, ctype, **kwargs):
+        pass

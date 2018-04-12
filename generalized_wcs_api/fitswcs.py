@@ -8,9 +8,7 @@ from astropy import wcs as astwcs
 from gwcs import wcs
 from gwcs import coordinate_frames as cf
 
-
 __version__ = "2.0.0"
-
 
 class FitsWcsPix2World(Model):
     """
@@ -29,7 +27,7 @@ class FitsWcsPix2World(Model):
         self.origin = origin
         self.inputs = tuple('x{0}'.format(ind) for ind in list(range(self.fitswcs.naxis)))
         self._outputs = tuple('x{0}'.format(ind) for ind in list(range(len(self.fitswcs.wcs.ctype))))
-        super(FitsWcsPix2World, self).__init__(**kwargs)
+        super(FitsWcsPix2World, self).__init__(name='pix2world', **kwargs)
 
     def evaluate(self, x, y):
         return self.fitswcs.wcs_pix2world(x, y, self.origin)
@@ -44,7 +42,7 @@ class FitsWcsWorld2Pix(Model):
         self.origin = origin
         self.inputs = tuple('x{0}'.format(ind) for ind in list(range(self.fitswcs.naxis)))
         self.outputs = tuple('x{0}'.format(ind) for ind in list(range(len(self.fitswcs.wcs.ctype))))
-        super(FitsWcsWorld2Pix, self).__init__(**kwargs)
+        super(FitsWcsWorld2Pix, self).__init__(name='world2pix', **kwargs)
 
     def evaluate(self, x, y):
         return self.fitswcs.wcs_world2pix(x, y, origin=self.origin)

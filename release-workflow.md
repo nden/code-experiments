@@ -55,8 +55,8 @@ good practicies when releasing a package.
    The command to do this is:
 
    ```
-   git checkout <release_branch>
-   git tag -a "2.1.3" -m "Tagging release v 2.1.3"
+   $ git checkout <release_branch>
+   $ git tag -a "2.1.3" -m "Tagging release v 2.1.3"
    ```
 
 5. Publishing a Release on Github
@@ -116,14 +116,14 @@ and set the date of the release in CHANGES.rst. Tag the release on master.
   ```
 
 Create an annotated tag which corresponds to the release and push it to the repository.
-Publish the release on github and PyPi.
+Publish the release on Github and PyPi.
 
 ### Use a different release branch for each release.
 
 In this case the release is prepared on a dedicated branch ("release branch").
 It is possible to maintain old releases by doing a patch release off a release branch.
-The instructions below use a third branch called "stable". It is a branch where
-final releases land and are tagged.
+The instructions below use a third branch called "stable". This is the production branch.
+Release branches are merged with it and the release is tagged on the "stable" branch.
 
 The specific steps are:
 
@@ -172,9 +172,10 @@ current branch is "master".
 
 Note: If this package is to be installed nightly internally in conda-dev then "master"
 needs to be tagged with a "newer" tag which is picked up by conda-dev build scripts.
-The suggested tag is the next version, followed by the character `a`. The tag name
-should be chosen in such a way that conda would resolve it as the latest tag. This
-allows the nightly build scripts to pick up the latest version from master.
+The tag name should be chosen in such a way that conda would resolve it as the
+latest tag. This allows the nightly build scripts to always pick up the latest
+version from master. The suggested tag is the next version, followed by the
+character `a`.
 
    ```
    $ git checkout master
